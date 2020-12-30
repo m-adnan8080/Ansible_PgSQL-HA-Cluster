@@ -1,0 +1,23 @@
+[db_hosts]
+172.16.10.11
+172.16.10.12
+172.16.10.13
+172.16.10.14
+
+[dbmaster]
+172.16.10.11
+
+[dbslaves]
+172.16.10.12
+172.16.10.13
+
+[pgbouncer]
+172.16.10.14
+
+[db_hosts:vars]
+ansible_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+repl_user=replusr
+repl_passwd=replPass
+

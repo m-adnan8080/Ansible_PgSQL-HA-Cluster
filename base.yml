@@ -1,0 +1,28 @@
+# - name: Add PostgreSQL Repo
+#   package:
+#     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+#     state: present
+
+- name: Add PostgreSQL Repo
+  yum_repository:
+    name: PostgreSQL
+    description: PostgreSQL repo
+    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+    gpgcheck: no
+
+- name: "Install tools and PostgreSQL 12"
+  package:
+    name:
+    - wget
+    - nano
+    - net-tools
+    - postgresql12-server
+    - python3-psycopg2
+    state: present
+    update_cache: true
+
+# - name: "Enable PostgreSQL service on boot"
+#   systemd:
+#     name: postgresql
+#     state: started
+#     enabled: yes

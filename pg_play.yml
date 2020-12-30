@@ -1,0 +1,14 @@
+---
+
+- name: Main play 
+  hosts: db_hosts
+  become: true
+
+  tasks:
+  # - name: Pre tasks
+  #   import_task: ./base.yml
+
+  - name: Execute prequisites on all hosts
+    import_tasks: base.yml
+    when: inventory_hostname in groups['db_hosts']
+    become: true
