@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "centos/7"
+  config.vm.box = "centos/8"
 
   # Add proxy config to VM
   if Vagrant.has_plugin?("vagrant-proxyconf")
