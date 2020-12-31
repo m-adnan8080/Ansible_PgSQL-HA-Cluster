@@ -1,28 +1,40 @@
+- name: Common:- Import PostgreSQL key from a url
+  rpm_key:
+    state: present
+    key: https://ftp.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG
+
+- name: Common:- PostgreSQL 12 repo
+  yum:
+    name: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+    state: present
+
+- name: Common:- Install PostgreSQL 12 packages
+  yum:
+    name:
+      - net-tools
+      - nano
+      - postgresql12
+      - postgresql12-contrib
+      - postgresql12-server
+      - python3-psycopg2
+    state: present
+
+
 # - name: Add PostgreSQL Repo
 #   package:
 #     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 #     state: present
 
-- name: Add PostgreSQL Repo
-  yum_repository:
-    name: PostgreSQL
-    description: PostgreSQL repo
-    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
-    gpgcheck: no
+# - name: Add PostgreSQL Repo
+#   yum_repository:
+#     name: PostgreSQL
+#     description: PostgreSQL repo
+#     baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+#     gpgcheck: no
 
-- name: "Install tools and PostgreSQL 12"
-  package:
-    name:
-    - wget
-    - nano
-    - net-tools
-    - postgresql12-server
-    - python3-psycopg2
-    state: present
-    update_cache: true
 
 # - name: "Enable PostgreSQL service on boot"
 #   systemd:
-#     name: postgresql
+#     name: postgresql-12.service
 #     state: started
 #     enabled: yes
