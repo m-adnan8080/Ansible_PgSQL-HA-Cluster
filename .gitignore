@@ -1,2 +1,3 @@
 .vagrant
 .vagrant/*
+files/id_ed25519_postgres
