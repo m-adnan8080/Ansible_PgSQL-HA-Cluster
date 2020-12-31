@@ -1,6 +1,6 @@
 ---
 
-- name: Main play 
+- name: Main play
   hosts: db_hosts
   become: true
 
@@ -10,32 +10,3 @@
     import_tasks: base.yml
     when: inventory_hostname in groups['db_hosts']
     become: true
-
-  - name: Create ssh direcotry for postgres user
-    file:
-      path: /var/lib/pgsql/.ssh
-      state: directory
-      owner: postgres
-      group: postgres
-      mode: 700
-
-  - name: Copy file to postgres user for password less ssh
-    copy:
-      src: {{ item.src }}
-      dest: {{ item.dest }}
-      owner: postgres
-      group: postgres
-      mode: 700
-      with_items:
-        - { src: .bashrc , dest: /var/lib/pgsql }
-        - { src: .profile , dest: /var/lib/pgsql }
-
-  - name: Copy file to postgres user for password less ssh
-    copy: src='{{ item.src }}' dest='{{ item.dest }}'
-    owner: postgres
-    group: postgres
-    mode: 600
-    with_items:
-      - "{ src: 'id_ed25519_postgres' , dest: '/var/lib/pgsql/.ssh/' }"
-      - "{ src: 'id_ed25519_postgres.pub' , dest: '/var/lib/pgsql/.ssh/' }"
-      - "{ src: 'authorized_keys' , dest: '/var/lib/pgsql/.ssh/' }"
