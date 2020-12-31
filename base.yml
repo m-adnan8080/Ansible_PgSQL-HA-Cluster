@@ -19,22 +19,8 @@
       - python3-psycopg2
     state: present
 
-
-# - name: Add PostgreSQL Repo
-#   package:
-#     name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-#     state: present
-
-# - name: Add PostgreSQL Repo
-#   yum_repository:
-#     name: PostgreSQL
-#     description: PostgreSQL repo
-#     baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
-#     gpgcheck: no
-
-
-# - name: "Enable PostgreSQL service on boot"
-#   systemd:
-#     name: postgresql-12.service
-#     state: started
-#     enabled: yes
+- name: "Enable PostgreSQL service on boot"
+  systemd:
+    name: postgresql-12.service
+    state: started
+    enabled: yes
