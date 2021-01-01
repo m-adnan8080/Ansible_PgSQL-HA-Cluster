@@ -2,4 +2,3 @@
 .vagrant/*
 files/id_ed25519_postgres
 files/id_ed25519_postgres.pub
-Vagrantfile

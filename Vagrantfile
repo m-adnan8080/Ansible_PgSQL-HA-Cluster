@@ -5,12 +5,12 @@ Vagrant.configure("2") do |config|
   config.vm.box = "centos/7"
 
   # Add proxy config to VM
-  # if Vagrant.has_plugin?("vagrant-proxyconf")
-  #   config.proxy.http     = "http://172.16.0.28:8080/"
-  #   config.proxy.https    = "http://172.16.0.28:8080/"
-  #   config.proxy.ftp      = "http://172.16.0.28:8080"
-  #   config.proxy.no_proxy = "localhost,127.0.0.1"
-  # end
+  if Vagrant.has_plugin?("vagrant-proxyconf")
+    config.proxy.http     = "http://172.16.0.28:8080/"
+    config.proxy.https    = "http://172.16.0.28:8080/"
+    config.proxy.ftp      = "http://172.16.0.28:8080"
+    config.proxy.no_proxy = "localhost,127.0.0.1"
+  end
 
   # Add current user ssh public key to VM
   config.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "/home/vagrant/id_rsa.pub"
