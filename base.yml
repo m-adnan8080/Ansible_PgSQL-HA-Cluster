@@ -17,13 +17,8 @@
       - postgresql12-contrib
       - postgresql12-server
       - python3-psycopg2
+      - repmgr12
     state: present
-
-- name: "Enable PostgreSQL service on boot"
-  systemd:
-    name: postgresql-12.service
-    # state: started
-    enabled: yes
 
 - name: Copy file to postgres user
   copy:
@@ -55,3 +50,62 @@
     - id_ed25519_postgres
     - id_ed25519_postgres.pub
     - authorized_keys
+
+- name: Check if database is already initialized
+  stat:
+    path: '/var/lib/pgsql/12/data/PG_VERSION'
+  register: init_status
+
+- name: Initialize the PostgreSQL database
+  shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
+  when: init_status.stat.exists == False
+
+- name: "Enable PostgreSQL service on boot"
+  systemd:
+    name: postgresql-12.service
+    state: started
+    enabled: yes
+
+- name: Create log direcotry for PostgreSQL
+  file:
+    path: /var/log/pgsql/
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 755
+
+- name: Create RepMGR log file
+  file:
+    path: /var/log/pgsql/repmgr.log
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: 644
+
+- name: Create PostgreSQL log direcotry
+  file:
+    src: /var/lib/pgsql/12/data/log
+    dest: /var/lob/pgsql/log
+    state: link
+    owner: postgres
+    group: postgres
+    mode: 644
+
+- name: Create repmgr conf file
+  blockinfile:
+    path: /etc/repmgr/12/repmgr.conf
+    block: |
+      node_id=101
+      node_name="{{ ansible_facts['nodename'] }}"
+      conninfo='host=base-centos-1 dbname=repmgr user=repmgr'
+      data_directory='/var/lib/pgsql/12/data/'
+      config_directory='/var/lib/pgsql/12/data'
+      log_file='/var/log/pgsql/repmgr.log'
+      repmgrd_service_start_command = '/usr/pgsql-12/bin/repmgrd -d'
+      repmgrd_service_stop_command = 'kill `cat $(/usr/pgsql-12/bin/repmgrd --show-pid-file)`'
+      promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
+      follow_command='repmgr standby follow -f /etc/repmgr/12/repmgr.conf --log-to-file'
+      failover=automatic
+      reconnect_attempts=3
+      reconnect_interval=5
+      ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'

@@ -1,9 +1,3 @@
-[db_hosts]
-172.16.10.11
-172.16.10.12
-172.16.10.13
-172.16.10.14
-
 [dbmaster]
 172.16.10.11
 
@@ -13,6 +7,11 @@
 
 [pgbouncer]
 172.16.10.14
+
+[db_hosts:children]
+dbmaster
+dbslaves
+pgbouncer
 
 [db_hosts:vars]
 ansible_user=vagrant
