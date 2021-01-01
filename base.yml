@@ -3,12 +3,12 @@
     state: present
     key: https://ftp.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG
 
-- name: Common:- PostgreSQL 12 repo
+- name: Install PostgreSQL 12 repo
   yum:
     name: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
     state: present
 
-- name: Common:- Install PostgreSQL 12 packages
+- name: Install PostgreSQL 12 and repmgr packages
   yum:
     name:
       - net-tools
@@ -19,8 +19,18 @@
       - python3-psycopg2
       - repmgr12
     state: present
+  when: inventory_hostname in groups['db_hosts']
 
-- name: Copy file to postgres user
+- name: Install PgBouncer package
+  yum:
+    name:
+      - net-tools
+      - nano
+      - pgbouncer
+    state: present
+  when: inventory_hostname in groups['watcher']
+
+- name: Copy .bashrc and .profile files to postgres user
   copy:
     src: '{{ item }}'
     dest: /var/lib/pgsql
@@ -30,16 +40,18 @@
   with_items:
     - .bashrc
     - .profile
+  when: inventory_hostname in groups['db_hosts']
 
-- name: Create ssh direcotry for postgres user
+- name: Create ssh directory for postgres user
   file:
     path: /var/lib/pgsql/.ssh
     state: directory
     owner: postgres
     group: postgres
     mode: 700
+  when: inventory_hostname in groups['db_hosts']
 
-- name: Copy file to postgres user for password less ssh
+- name: Copy ssh private, public and authorized_keys files to postgres user
   copy:
     src: '{{ item }}'
     dest: /var/lib/pgsql/.ssh
@@ -50,57 +62,35 @@
     - id_ed25519_postgres
     - id_ed25519_postgres.pub
     - authorized_keys
+  when: inventory_hostname in groups['db_hosts']
 
 - name: Check if database is already initialized
   stat:
     path: '/var/lib/pgsql/12/data/PG_VERSION'
   register: init_status
+  when: inventory_hostname in groups['db_hosts']
 
 - name: Initialize the PostgreSQL database
   shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
-  when: init_status.stat.exists == False
+  when: inventory_hostname in groups['db_hosts'] and init_status.stat.exists == False
 
-- name: "Enable PostgreSQL service on boot"
+- name: Start and enable PostgreSQL service on boot
   systemd:
     name: postgresql-12.service
     state: started
     enabled: yes
-
-- name: Create log direcotry for PostgreSQL
-  file:
-    path: /var/log/pgsql/
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: 755
-
-- name: Create RepMGR log file
-  file:
-    path: /var/log/pgsql/repmgr.log
-    state: touch
-    owner: postgres
-    group: postgres
-    mode: 644
-
-- name: Create PostgreSQL log direcotry
-  file:
-    src: /var/lib/pgsql/12/data/log
-    dest: /var/log/pgsql/log
-    state: link
-    owner: postgres
-    group: postgres
-    mode: 644
+  when: inventory_hostname in groups['db_hosts']
 
 - name: Create repmgr conf file
   blockinfile:
     path: /etc/repmgr/12/repmgr.conf
     block: |
-      node_id="{{ node_id }}"
-      node_name="{{ ansible_facts['nodename'] }}"
-      conninfo='host=base-centos-1 dbname=repmgr user=repmgr'
+      node_id={{ node_id }}
+      node_name={{ ansible_facts['nodename'] }}
+      conninfo='host={{ ansible_facts['nodename'] }} dbname=repmgr user=repmgr'
       data_directory='/var/lib/pgsql/12/data/'
       config_directory='/var/lib/pgsql/12/data'
-      log_file='/var/log/pgsql/repmgr.log'
+      log_file='/var/log/repmgr/repmgr.log'
       repmgrd_service_start_command = '/usr/pgsql-12/bin/repmgrd -d'
       repmgrd_service_stop_command = 'kill `cat $(/usr/pgsql-12/bin/repmgrd --show-pid-file)`'
       promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
@@ -109,3 +99,4 @@
       reconnect_attempts=3
       reconnect_interval=5
       ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'
+  when: inventory_hostname in groups['db_hosts']
