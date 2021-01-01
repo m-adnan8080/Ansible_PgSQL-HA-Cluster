@@ -1,12 +1,11 @@
 ---
 
 - name: Main play
-  hosts: db_hosts
+  hosts: db_hosts, watcher
   become: true
 
   tasks:
 
   - name: Execute prequisites on all hosts
     import_tasks: base.yml
-    when: inventory_hostname in groups['db_hosts']
     become: true
