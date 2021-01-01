@@ -1,1 +1,18 @@
 ---
+
+- name: Check if database is already initialized
+  stat:
+    path: '/var/lib/pgsql/12/data/PG_VERSION'
+  register: init_status
+  when: inventory_hostname in groups['dbmaster']
+
+- name: Initialize the PostgreSQL database
+  shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
+  when: inventory_hostname in groups['dbmaster'] and init_status.stat.exists == False
+
+- name: Start and enable PostgreSQL service on boot
+  systemd:
+    name: postgresql-12.service
+    state: started
+    enabled: yes
+  when: inventory_hostname in groups['dbmaster']

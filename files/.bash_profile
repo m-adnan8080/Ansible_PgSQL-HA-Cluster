@@ -25,3 +25,8 @@ fi
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
+
+export PATH=/usr/pgsql-12/bin:$PATH
+export PGDATA=/var/lib/pgsql/12/data
+export PGPORT=5432
+export PGHOST=localhost

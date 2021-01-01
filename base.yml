@@ -1,15 +1,15 @@
-- name: Common:- Import PostgreSQL key from a url
+- name: Import PostgreSQL key from a url
   rpm_key:
     state: present
     key: https://ftp.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG
 
 - name: Install PostgreSQL 12 repo
-  yum:
+  package:
     name: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
     state: present
 
 - name: Install PostgreSQL 12 and repmgr packages
-  yum:
+  package:
     name:
       - net-tools
       - nano
@@ -22,7 +22,7 @@
   when: inventory_hostname in groups['db_hosts']
 
 - name: Install PgBouncer package
-  yum:
+  package:
     name:
       - net-tools
       - nano
@@ -30,16 +30,16 @@
     state: present
   when: inventory_hostname in groups['watcher']
 
-- name: Copy .bashrc and .profile files to postgres user
+- name: Copy Env files to postgres user
   copy:
     src: '{{ item }}'
     dest: /var/lib/pgsql
     owner: postgres
     group: postgres
-    mode: 700
+    mode: 0600
   with_items:
     - .bashrc
-    - .profile
+    - .bash_profile
   when: inventory_hostname in groups['db_hosts']
 
 - name: Create ssh directory for postgres user
@@ -48,55 +48,49 @@
     state: directory
     owner: postgres
     group: postgres
-    mode: 700
+    mode: 0700
   when: inventory_hostname in groups['db_hosts']
 
-- name: Copy ssh private, public and authorized_keys files to postgres user
+- name: Copy ssh private and public files to postgres user
   copy:
     src: '{{ item }}'
     dest: /var/lib/pgsql/.ssh
     owner: postgres
     group: postgres
-    mode: 600
+    mode: 0600
   with_items:
-    - id_ed25519_postgres
-    - id_ed25519_postgres.pub
-    - authorized_keys
+    - id_ed25519
+    - id_ed25519.pub
   when: inventory_hostname in groups['db_hosts']
 
-- name: Check if database is already initialized
-  stat:
-    path: '/var/lib/pgsql/12/data/PG_VERSION'
-  register: init_status
-  when: inventory_hostname in groups['db_hosts']
-
-- name: Initialize the PostgreSQL database
-  shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
-  when: inventory_hostname in groups['db_hosts'] and init_status.stat.exists == False
-
-- name: Start and enable PostgreSQL service on boot
-  systemd:
-    name: postgresql-12.service
-    state: started
-    enabled: yes
+- name: Copy authorized_keys file to postgres user
+  copy:
+    src: authorized_keys
+    dest: /var/lib/pgsql/.ssh
+    owner: postgres
+    group: postgres
+    mode: 0644
   when: inventory_hostname in groups['db_hosts']
 
 - name: Create repmgr conf file
   blockinfile:
     path: /etc/repmgr/12/repmgr.conf
     block: |
-      node_id={{ node_id }}
-      node_name={{ ansible_facts['nodename'] }}
-      conninfo='host={{ ansible_facts['nodename'] }} dbname=repmgr user=repmgr'
-      data_directory='/var/lib/pgsql/12/data/'
-      config_directory='/var/lib/pgsql/12/data'
-      log_file='/var/log/repmgr/repmgr.log'
-      repmgrd_service_start_command = '/usr/pgsql-12/bin/repmgrd -d'
-      repmgrd_service_stop_command = 'kill `cat $(/usr/pgsql-12/bin/repmgrd --show-pid-file)`'
-      promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
-      follow_command='repmgr standby follow -f /etc/repmgr/12/repmgr.conf --log-to-file'
-      failover=automatic
-      reconnect_attempts=3
-      reconnect_interval=5
-      ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'
+      #############################
+        node_id={{ node_id }}
+        node_name={{ ansible_facts['nodename'] }}
+        cluster=pg_cluster
+        conninfo='host={{ ansible_facts['eth1']['ipv4']['address'] }} dbname=repmgr user=repmgr'
+        data_directory='/var/lib/pgsql/12/data'
+        config_directory='/var/lib/pgsql/12/data'
+        log_file='/var/log/repmgr/repmgr.log'
+        repmgrd_service_start_command = '/usr/pgsql-12/bin/repmgrd -d'
+        repmgrd_service_stop_command = 'kill `cat $(/usr/pgsql-12/bin/repmgrd --show-pid-file)`'
+        promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
+        follow_command='repmgr standby follow -f /etc/repmgr/12/repmgr.conf --log-to-file'
+        failover=automatic
+        reconnect_attempts=3
+        reconnect_interval=5
+        ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'
+      #############################
   when: inventory_hostname in groups['db_hosts']
