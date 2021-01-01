@@ -85,7 +85,7 @@
 - name: Create PostgreSQL log direcotry
   file:
     src: /var/lib/pgsql/12/data/log
-    dest: /var/lob/pgsql/log
+    dest: /var/log/pgsql/log
     state: link
     owner: postgres
     group: postgres
@@ -95,7 +95,7 @@
   blockinfile:
     path: /etc/repmgr/12/repmgr.conf
     block: |
-      node_id=101
+      node_id="{{ node_id }}"
       node_name="{{ ansible_facts['nodename'] }}"
       conninfo='host=base-centos-1 dbname=repmgr user=repmgr'
       data_directory='/var/lib/pgsql/12/data/'

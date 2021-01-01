@@ -1,12 +1,12 @@
 [dbmaster]
-172.16.10.11
+172.16.10.11 node_id=1
 
 [dbslaves]
-172.16.10.12
-172.16.10.13
+172.16.10.12 node_id=2
+172.16.10.13 node_id=3
 
 [pgbouncer]
-172.16.10.14
+172.16.10.14 node_id=4
 
 [db_hosts:children]
 dbmaster
