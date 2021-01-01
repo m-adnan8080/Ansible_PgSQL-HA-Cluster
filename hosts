@@ -6,11 +6,13 @@
 172.16.10.13 node_id=3
 
 [pgbouncer]
-172.16.10.14 node_id=4
+172.16.10.14
 
 [db_hosts:children]
 dbmaster
 dbslaves
+
+[watcher:children]
 pgbouncer
 
 [db_hosts:vars]
@@ -18,4 +20,8 @@ ansible_user=vagrant
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 repl_user=replusr
 repl_passwd=replPass
+
+[watcher:vars]
+ansible_user=vagrant
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
