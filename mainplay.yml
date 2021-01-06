@@ -8,4 +8,13 @@
 
   - name: Execute prequisites on all hosts
     import_tasks: base.yml
-    become: true
+
+
+- name: DB Master Play
+  hosts: dbmaster
+  become: true
+
+  tasks:
+
+  - name: Setup PostgreSQL Master Server
+    import_tasks: master.yml
