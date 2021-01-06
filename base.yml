@@ -16,7 +16,7 @@
       - postgresql12
       - postgresql12-contrib
       - postgresql12-server
-      - python3-psycopg2
+      - python-psycopg2
       - repmgr12
     state: present
   when: inventory_hostname in groups['db_hosts']
