@@ -16,3 +16,34 @@
     state: started
     enabled: yes
   when: inventory_hostname in groups['dbmaster']
+
+- name: Create repmgr user in PostgreSQL
+  postgresql_user:
+    name: repmgr
+    role_attr_flags: REPLICATION,CREATEDB,CREATEROLE,SUPERUSER
+  become: true
+  become_user: postgres
+
+- name: Create repmgr database owner repmgr in PostgreSQL
+  postgresql_db:
+    name: repmgr
+    owner: repmgr
+    state: present
+  become: true
+  become_user: postgres
+
+- name: Alter repmgr user and set search path
+  command: psql -c 'ALTER USER repmgr SET search_path TO repmgr, public;'
+  become: true
+  become_user: postgres
+
+- name: Master- Enable replication user to login
+  become: true
+  become_user: postgres
+  blockinfile:
+    path: /var/lib/pgsql/12/data/pg_hba.conf
+    block: |
+      {% for host in groups['db_hosts'] %}
+      host    replication     replusr     {{ ansible_facts['eth1']['ipv4']['address'] }}/32    md5
+      {% endfor %}
+  notify: Restart database
