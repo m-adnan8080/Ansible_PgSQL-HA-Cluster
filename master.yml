@@ -47,7 +47,7 @@
       host    replication     repmgr     {{ ansible_facts['eth1']['ipv4']['address'] }}/32    trust
       host    repmgr    repmgr     {{ ansible_facts['eth1']['ipv4']['address'] }}/32    trust
       {% endfor %}
-  register: pghba-config
+  register: pghba_config
 
 - name: Create archive directory
   file:
@@ -62,7 +62,6 @@
     path: /var/lib/pgsql/12/data/postgresql.conf
     block: |
       #############################
-
       listen_addresses = 'localhost,{{ ansible_eth1.ipv4.address }}'
       shared_preload_libraries = 'repmgr'
       wal_level = replica
@@ -70,31 +69,30 @@
       max_wal_senders = 10
       hot_standby = on
       archive_command = 'cp -i %p /var/lib/pgsql/10/data/archive/%f'
-      
       #############################
-  register: postgresql-config
+  register: postgresql_config
 
 - name: Restart database
   systemd:
     state: restarted
-    name: postgresql
-  when: postgresql-config.change == True or pghba-config.change == True
+    name: postgresql-12
+  when: postgresql_config.changed or pghba_config.changed
 
 - name: Register Master in repmgr
-  command: repmgr primary register
+  command: /usr/pgsql-12/bin/repmgr primary register
   become: true
   become_user: postgres
 
 - name: Start repmgr daemon 
-  command: repmgr daemon start
+  command: /usr/pgsql-12/bin/repmgr daemon start
   become: true
   become_user: postgres
 
 - name: Check repmgr daemon status
-  command: repmgr daemon status
+  command: /usr/pgsql-12/bin/repmgr daemon status
   become: true
   become_user: postgres
-  register: repmgr-status
+  register: repmgr_status
 
 - debug:
-    var: repmgr-status.stdout
+    var: repmgr_status.stdout
