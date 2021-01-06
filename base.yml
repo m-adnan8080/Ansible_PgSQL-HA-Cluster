@@ -36,7 +36,7 @@
     dest: /var/lib/pgsql
     owner: postgres
     group: postgres
-    mode: 0600
+    mode: 0644
   with_items:
     - .bashrc
     - .bash_profile
@@ -61,6 +61,7 @@
   with_items:
     - id_ed25519
     - id_ed25519.pub
+    - config
   when: inventory_hostname in groups['db_hosts']
 
 - name: Copy authorized_keys file to postgres user
