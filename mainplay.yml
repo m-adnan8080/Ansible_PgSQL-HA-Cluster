@@ -18,3 +18,10 @@
 
   - name: Setup PostgreSQL Master Server
     import_tasks: master.yml
+
+  handlers:
+    - name: Restart database
+      systemd:
+        state: restarted
+        name: postgresql-12
+      become: true
