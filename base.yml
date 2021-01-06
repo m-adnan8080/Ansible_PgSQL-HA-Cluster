@@ -79,8 +79,7 @@
     block: |
       #############################
         node_id={{ node_id }}
-        node_name={{ ansible_facts['nodename'] }}
-        cluster=pg_cluster
+        node_name={{ ansible_facts['hostname'] }}
         conninfo='host={{ ansible_facts['eth1']['ipv4']['address'] }} dbname=repmgr user=repmgr'
         data_directory='/var/lib/pgsql/12/data'
         config_directory='/var/lib/pgsql/12/data'
