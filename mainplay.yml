@@ -25,3 +25,19 @@
         state: restarted
         name: postgresql-12
       become: true
+
+- name: DB Slave Play
+  hosts: dbslaves
+  become: true
+
+  tasks:
+
+  - name: Setup PostgreSQL Master Server
+    import_tasks: slave.yml
+
+  handlers:
+    - name: Restart database
+      systemd:
+        state: restarted
+        name: postgresql-12
+      become: true

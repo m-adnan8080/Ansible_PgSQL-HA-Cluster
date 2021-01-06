@@ -68,7 +68,7 @@
       archive_mode = on
       max_wal_senders = 10
       hot_standby = on
-      archive_command = 'cp -i %p /var/lib/pgsql/10/data/archive/%f'
+      archive_command = 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
       #############################
   register: postgresql_config
 
