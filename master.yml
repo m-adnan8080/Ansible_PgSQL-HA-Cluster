@@ -78,7 +78,7 @@
   become: true
   become_user: postgres
 
-- name: Check if repmgr is started 
+- name: Check if repmgr is started
   stat:
     path: '/tmp/repmgrd.pid'
   register: repmgr_status
@@ -89,7 +89,7 @@
   become_user: postgres
   when: repmgr_status.stat.exists == False
 
-- name: Start repmgr daemon 
+- name: Start repmgr daemon
   command: /usr/pgsql-12/bin/repmgr daemon start
   become: true
   become_user: postgres
