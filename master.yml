@@ -4,7 +4,6 @@
   stat:
     path: '/var/lib/pgsql/12/data/PG_VERSION'
   register: init_status
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Initialize the PostgreSQL database
   shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
@@ -24,7 +23,6 @@
       archive_command = 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
       #############################
   register: postgresql_config
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Enable replication user to login
   become: true
@@ -37,7 +35,6 @@
       host    repmgr          repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
       {% endfor %}
   register: pghba_config
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Create archive directory
   file:
@@ -46,20 +43,16 @@
     owner: postgres
     group: postgres
     mode: 0700
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Start and enable PostgreSQL service on boot
   systemd:
     name: postgresql-12.service
     state: started
     enabled: yes
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Restart database if config changed
   command: echo ""
-  when:
-    - inventory_hostname in groups['dbmaster']
-    - postgresql_config.changed or pghba_config.changed
+  when: postgresql_config.changed or pghba_config.changed
   notify: Restart database
 
 - name: Flush handler
@@ -71,7 +64,6 @@
     role_attr_flags: REPLICATION,CREATEDB,CREATEROLE,SUPERUSER
   become: true
   become_user: postgres
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Create repmgr database owner repmgr in PostgreSQL
   postgresql_db:
@@ -80,33 +72,34 @@
     state: present
   become: true
   become_user: postgres
-  when: inventory_hostname in groups['dbmaster']
 
 - name: Alter repmgr user and set search path
   command: psql -c 'ALTER USER repmgr SET search_path TO repmgr, public;'
   become: true
   become_user: postgres
-  when: inventory_hostname in groups['dbmaster']
+
+- name: Check if repmgr is started 
+  stat:
+    path: '/tmp/repmgrd.pid'
+  register: repmgr_status
 
 - name: Register Master in repmgr
-  command: /usr/pgsql-12/bin/repmgr primary register -F
+  command: /usr/pgsql-12/bin/repmgr primary register
   become: true
   become_user: postgres
-  when: inventory_hostname in groups['dbmaster']
+  when: repmgr_status.stat.exists == False
 
 - name: Start repmgr daemon 
   command: /usr/pgsql-12/bin/repmgr daemon start
   become: true
   become_user: postgres
-  when: inventory_hostname in groups['dbmaster']
+  when: repmgr_status.stat.exists == False
 
 - name: Check repmgr daemon status
   command: /usr/pgsql-12/bin/repmgr daemon status
   become: true
   become_user: postgres
   register: repmgr_status
-  when: inventory_hostname in groups['dbmaster']
 
 - debug:
     var: repmgr_status.stdout
-  when: inventory_hostname in groups['dbmaster']

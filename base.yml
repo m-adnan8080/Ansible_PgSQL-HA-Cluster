@@ -27,6 +27,7 @@
       - net-tools
       - nano
       - pgbouncer
+      - postgresql12-contrib
     state: present
   when: inventory_hostname in groups['watcher']
 
@@ -93,4 +94,6 @@
         reconnect_interval=5
         ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'
       #############################
+    owner: postgres
+    group: postgres
   when: inventory_hostname in groups['db_hosts']

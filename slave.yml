@@ -2,43 +2,15 @@
 
 - name: Check if database is standing by
   stat:
-    path: '/var/lib/postgresql/12/data/backup_label.old'
+    path: '/var/lib/pgsql/12/data/backup_label.old'
   register: backup_status
-  when: inventory_hostname in groups['dbslaves']
 
 - name: Stop PostgreSQL service
   systemd:
     name: postgresql-12.service
     state: stopped
     enabled: yes
-  when: inventory_hostname in groups['dbslaves'] and backup_status.stat.exists == False
-
-- name: Enable replication user to login
-  become: true
-  become_user: postgres
-  blockinfile:
-    path: /var/lib/pgsql/12/data/pg_hba.conf
-    block: |
-      {% for host in groups['db_hosts'] %}
-      host    replication     repmgr     {{ ansible_facts['eth1']['ipv4']['address'] }}/32    trust
-      host    repmgr    repmgr     {{ ansible_facts['eth1']['ipv4']['address'] }}/32    trust
-      {% endfor %}
-  register: pghba_config
-
-- name: Update postgresql.conf file
-  blockinfile:
-    path: /var/lib/pgsql/12/data/postgresql.conf
-    block: |
-      #############################
-      listen_addresses = 'localhost,{{ ansible_eth1.ipv4.address }}'
-      shared_preload_libraries = 'repmgr'
-      wal_level = replica
-      archive_mode = on
-      max_wal_senders = 10
-      hot_standby = on
-      archive_command = 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
-      #############################
-  register: postgresql_config
+  when: backup_status.stat.exists == False
 
 - name: "Remove old data directory"
   file:
@@ -51,19 +23,30 @@
   become: true
   become_user: postgres
   when: backup_status.stat.exists == False
-  notify: Restart database
 
-- meta: flush_handlers
+- name: Start and enable PostgreSQL service on boot
+  systemd:
+    name: postgresql-12.service
+    state: started
+    enabled: yes
 
-- name: Register Master in repmgr
+- name: Check if repmgr is started 
+  stat:
+    path: '/tmp/repmgrd.pid'
+  register: repmgr_status
+
+- name: Register slave in repmgr
   command: /usr/pgsql-12/bin/repmgr standby register -h {% for host in groups['dbmaster'] %}{{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}{% endfor %} -U repmgr
   become: true
   become_user: postgres
+  when: repmgr_status.stat.exists == False
+
 
 - name: Start repmgr daemon 
   command: /usr/pgsql-12/bin/repmgr daemon start
   become: true
   become_user: postgres
+  when: repmgr_status.stat.exists == False
 
 - name: Check repmgr daemon status
   command: /usr/pgsql-12/bin/repmgr daemon status
@@ -73,9 +56,3 @@
 
 - debug:
     var: repmgr_status.stdout
-
-- name: Restart database
-  systemd:
-    state: restarted
-    name: postgresql-12
-  when: postgresql_config.changed or pghba_config.changed
