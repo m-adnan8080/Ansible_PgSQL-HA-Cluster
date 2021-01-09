@@ -12,11 +12,9 @@ REPMGR_DB="repmgr"
 REPMGR_USER="repmgr"
 
 # 1. Promote this node from standby to primary
-
 /usr/pgsql-12/bin/repmgr standby promote -f /etc/repmgr/12/repmgr.conf --log-to-file
 
 # 2. Reconfigure pgbouncer instances
-
 PGBOUNCER_DATABASE_INI_NEW="/tmp/pgbouncer.database.ini"
 
 for HOST in $PGBOUNCER_HOSTS
