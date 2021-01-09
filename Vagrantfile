@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define "slave1" do |server|
-    server.vm.hostname = "slave.test"
+    server.vm.hostname = "slave1.test"
     server.vm.network "private_network", ip: "172.16.10.12"
   end
 
