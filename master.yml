@@ -8,21 +8,10 @@
 - name: Initialize the PostgreSQL database
   shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
   when: inventory_hostname in groups['dbmaster'] and init_status.stat.exists == False
+  notify: Restart database
 
-- name: Update postgresql.conf file
-  blockinfile:
-    path: /var/lib/pgsql/12/data/postgresql.conf
-    block: |
-      #############################
-      listen_addresses = '*'
-      shared_preload_libraries = 'repmgr'
-      wal_level = replica
-      archive_mode = on
-      max_wal_senders = 10
-      hot_standby = on
-      archive_command = 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
-      #############################
-  register: postgresql_config
+- name: Flush handler
+  meta: flush_handlers
 
 - name: Enable replication user to login
   become: true
@@ -33,6 +22,7 @@
       {% for host in groups['db_hosts'] %}
       host    replication     repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
       host    repmgr          repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
+      host    all             all        0.0.0.0/0    trust
       {% endfor %}
   register: pghba_config
 
@@ -49,6 +39,78 @@
     name: postgresql-12.service
     state: started
     enabled: yes
+
+- name: Configure DBs to listen on ip address
+  postgresql_set:
+    name: listen_addresses
+    value: '*'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure wal_level parameter
+  postgresql_set:
+    name: wal_level
+    value: 'replica'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure repmgr shared libraries parameter
+  postgresql_set:
+    name: shared_preload_libraries
+    value: 'repmgr'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure wal_log_hints parameter
+  postgresql_set:
+    name: wal_log_hints
+    value: 'on'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure max_wal_senders parameter
+  postgresql_set:
+    name: max_wal_senders
+    value: '10'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure wal_keep_segments parameter
+  postgresql_set:
+    name: wal_keep_segments
+    value: '8'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure hot_standby parameter
+  postgresql_set:
+    name: hot_standby
+    value: 'on'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure archive_mode parameter
+  postgresql_set:
+    name: archive_mode
+    value: 'on'
+  register: postgresql_config
+  become: true
+  become_user: postgres
+
+- name: Configure archive_command parameter
+  postgresql_set:
+    name: archive_command
+    value: 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
+  register: postgresql_config
+  become: true
+  become_user: postgres
 
 - name: Restart database if config changed
   command: echo ""
