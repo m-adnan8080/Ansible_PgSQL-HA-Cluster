@@ -109,10 +109,21 @@
     group: postgres
   when: inventory_hostname in groups['db_hosts']
 
+- name: Create repmgr pid directory
+  file:
+    path: /run/repmgr
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: 0700
+  when: inventory_hostname in groups['db_hosts']
+
 - name: Add PostgreSQL to sudo group to start/stop PostgreSQL service without password
-  blockinfile:
-    path: /etc/sudoers.d/postgres
-    block: |
+  copy:
+    dest: /etc/sudoers.d/postgres
+    content: |
       postgres ALL = NOPASSWD: /usr/bin/systemctl stop postgresql-12.service, /usr/bin/systemctl start postgresql-12.service, /usr/bin/systemctl restart postgresql-12.service, /usr/bin/systemctl reload postgresql-12.service, /usr/bin/systemctl start repmgr12.service, /usr/bin/systemctl stop repmgr12.service, /usr/bin/systemctl reload repmgr12.service
   when: inventory_hostname in groups['db_hosts']
+  changed_when: False
+
 
