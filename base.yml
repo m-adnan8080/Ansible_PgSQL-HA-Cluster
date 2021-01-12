@@ -84,14 +84,23 @@
         node_id={{ node_id }}
         node_name={{ ansible_facts['hostname'] }}
         conninfo='host={{ ansible_facts['eth1']['ipv4']['address'] }} dbname=repmgr user=repmgr'
+        
         data_directory='/var/lib/pgsql/12/data'
         config_directory='/var/lib/pgsql/12/data'
         log_file='/var/log/repmgr/repmgr.log'
-        repmgrd_service_start_command = '/usr/pgsql-12/bin/repmgrd -d'
-        repmgrd_service_stop_command = 'kill `cat $(/usr/pgsql-12/bin/repmgrd --show-pid-file)`'
-        promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
-        follow_command='repmgr standby follow -f /etc/repmgr/12/repmgr.conf --log-to-file'
+        
+        repmgrd_service_start_command = 'sudo systemctl start repmgr12.service'
+        repmgrd_service_stop_command = 'sudo systemctl stop repmgr12.service'
+        service_start_command='sudo /usr/bin/systemctl start postgresql-12.service'
+        service_stop_command='sudo /usr/bin/systemctl stop postgresql-12.service'
+        service_restart_command='sudo /usr/bin/systemctl restart postgresql-12.service'
+        service_reload_command='sudo /usr/bin/systemctl reload postgresql-12.service'
+        
+        # promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --siblings-follow --log-to-file'
+        promote_command='repmgr standby promote -f /etc/repmgr/12/repmgr.conf --log-to-file'
+        follow_command='repmgr standby follow -f /etc/repmgr/12/repmgr.conf --log-to-file --upstream-node-id=%n'
         failover=automatic
+        
         reconnect_attempts=3
         reconnect_interval=5
         ssh_options='-q -o StrictHostKeyChecking=no -o ConnectTimeout=10'
@@ -99,3 +108,11 @@
     owner: postgres
     group: postgres
   when: inventory_hostname in groups['db_hosts']
+
+- name: Add PostgreSQL to sudo group to start/stop PostgreSQL service without password
+  blockinfile:
+    path: /etc/sudoers.d/postgres
+    block: |
+      postgres ALL = NOPASSWD: /usr/bin/systemctl stop postgresql-12.service, /usr/bin/systemctl start postgresql-12.service, /usr/bin/systemctl restart postgresql-12.service, /usr/bin/systemctl reload postgresql-12.service, /usr/bin/systemctl start repmgr12.service, /usr/bin/systemctl stop repmgr12.service, /usr/bin/systemctl reload repmgr12.service
+  when: inventory_hostname in groups['db_hosts']
+

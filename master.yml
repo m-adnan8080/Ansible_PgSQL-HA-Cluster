@@ -22,8 +22,8 @@
       {% for host in groups['db_hosts'] %}
       host    replication     repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
       host    repmgr          repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
-      host    all             all        0.0.0.0/0    trust
       {% endfor %}
+      host    all             all        0.0.0.0/0    md5
   register: pghba_config
 
 - name: Create archive directory
@@ -112,13 +112,11 @@
   become: true
   become_user: postgres
 
-- name: Restart database if config changed
-  command: echo ""
-  when: postgresql_config.changed or pghba_config.changed
-  notify: Restart database
-
-- name: Flush handler
-  meta: flush_handlers
+- name: Restart PostgreSQL to apply config changes
+  systemd:
+    name: postgresql-12.service
+    state: restarted
+  changed_when: False
 
 - name: Create repmgr user in PostgreSQL
   postgresql_user:
@@ -139,22 +137,26 @@
   command: psql -c 'ALTER USER repmgr SET search_path TO repmgr, public;'
   become: true
   become_user: postgres
+  changed_when: False
 
 - name: Check if repmgr is started
   stat:
-    path: '/tmp/repmgrd.pid'
+    path: '/run/repmgr/repmgrd-12.pid'
   register: repmgr_status
 
 - name: Register Master in repmgr
-  command: /usr/pgsql-12/bin/repmgr primary register
+  command: /usr/pgsql-12/bin/repmgr primary register -F
   become: true
   become_user: postgres
   when: repmgr_status.stat.exists == False
+  changed_when: False
 
-- name: Start repmgr daemon
-  command: /usr/pgsql-12/bin/repmgr daemon start
-  become: true
-  become_user: postgres
+- name: Start repmgr service
+  systemd:
+    name: repmgr12.service
+    state: restarted
+    enabled: yes
+  changed_when: False
 
 - name: Check repmgr daemon status
   command: /usr/pgsql-12/bin/repmgr daemon status
@@ -162,6 +164,8 @@
   become_user: postgres
   register: repmgr_status
   when: repmgr_status.stat.exists == True
+  changed_when: False
 
 - debug:
     var: repmgr_status.stdout
+  changed_when: False

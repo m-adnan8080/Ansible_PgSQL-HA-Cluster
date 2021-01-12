@@ -32,27 +32,30 @@
 
 - name: Check if repmgr is started
   stat:
-    path: '/tmp/repmgrd.pid'
+    path: '/run/repmgr/repmgrd-12.pid'
   register: repmgr_status
 
 - name: Register slave in repmgr
-  command: /usr/pgsql-12/bin/repmgr standby register -h {% for host in groups['dbmaster'] %}{{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}{% endfor %} -U repmgr
+  command: /usr/pgsql-12/bin/repmgr standby register -h {% for host in groups['dbmaster'] %}{{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}{% endfor %} -U repmgr -F
   become: true
   become_user: postgres
   when: repmgr_status.stat.exists == False
+  changed_when: False
 
-
-- name: Start repmgr daemon
-  command: /usr/pgsql-12/bin/repmgr daemon start
-  become: true
-  become_user: postgres
-  when: repmgr_status.stat.exists == False
+- name: Start repmgr service
+  systemd:
+    name: repmgr12.service
+    state: restarted
+    enabled: yes
+  changed_when: False
 
 - name: Check repmgr daemon status
   command: /usr/pgsql-12/bin/repmgr daemon status
   become: true
   become_user: postgres
   register: repmgr_status
+  changed_when: False
 
 - debug:
     var: repmgr_status.stdout
+  changed_when: False
