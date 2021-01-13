@@ -28,7 +28,7 @@
 
 - name: Create archive directory
   file:
-    path: /var/lib/pgsql/12/data/archive'
+    path: /var/lib/pgsql/12/data/archive
     state: directory
     owner: postgres
     group: postgres
