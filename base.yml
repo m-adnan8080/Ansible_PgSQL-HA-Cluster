@@ -37,7 +37,7 @@
       - net-tools
       - nano
       - pgbouncer
-      - postgresql12-contrib
+      - postgresql12
     state: present
   when: inventory_hostname in groups['watcher']
 
