@@ -19,20 +19,12 @@
   blockinfile:
     path: /var/lib/pgsql/12/data/pg_hba.conf
     block: |
-      {% for host in groups['db_hosts'] %}
+      {% for host in groups['all'] %}
       host    replication     repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
       host    repmgr          repmgr     {{ hostvars[host]['ansible_facts']['eth1']['ipv4']['address'] }}/32    trust
       {% endfor %}
       host    all             all        0.0.0.0/0    md5
   register: pghba_config
-
-- name: Create archive directory
-  file:
-    path: /var/lib/pgsql/12/data/archive
-    state: directory
-    owner: postgres
-    group: postgres
-    mode: 0700
 
 - name: Start and enable PostgreSQL service on boot
   systemd:
@@ -107,7 +99,7 @@
 - name: Configure archive_command parameter
   postgresql_set:
     name: archive_command
-    value: 'cp -i %p /var/lib/pgsql/12/data/archive/%f'
+    value: '/bin/true'
   register: postgresql_config
   become: true
   become_user: postgres
