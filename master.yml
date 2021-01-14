@@ -142,13 +142,13 @@
 - name: Check if repmgr is started
   stat:
     path: '/run/repmgr/repmgrd-12.pid'
-  register: repmgr_status
+  register: repmgr_service
 
 - name: Register Master in repmgr
   command: /usr/pgsql-12/bin/repmgr primary register -F
   become: true
   become_user: postgres
-  when: repmgr_status.stat.exists == False
+  when: repmgr_service.stat.exists == False
   changed_when: False
 
 - name: Start repmgr service
@@ -163,7 +163,7 @@
   become: true
   become_user: postgres
   register: repmgr_status
-  when: repmgr_status.stat.exists == True
+  when: repmgr_service.stat.exists == True
   changed_when: False
 
 - debug:
