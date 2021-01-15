@@ -6,7 +6,7 @@ slave1.test ansible_host=172.16.10.12 node_id=2
 slave2.test ansible_host=172.16.10.13 node_id=3
 
 [pgbouncer]
-pgbouncer.test ansible_host=172.16.10.14
+pgbouncer.test ansible_host=172.16.10.14 node_id=4
 
 [db_hosts:children]
 dbmaster
