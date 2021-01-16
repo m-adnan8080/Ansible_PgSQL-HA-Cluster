@@ -1,0 +1,24 @@
+---
+
+- name: Check if database is already initialized
+  stat:
+    path: '/var/lib/pgsql/12/data/PG_VERSION'
+  register: init_status
+
+- name: Initialize the PostgreSQL database
+  shell: "/usr/pgsql-12/bin/postgresql-12-setup initdb"
+  when: inventory_hostname in groups['watcher'] and init_status.stat.exists == False
+  notify: Restart database
+
+- name: Copy PostgreSQL config files from DB Master to PgBouncer
+  synchronize:
+    src: "{{ item }}"
+    dest: /var/lib/pgsql/12/data
+  delegate_to: "{{groups['dbmaster']}}"
+  with_items:
+   - "/var/lib/pgsql/12/data/postgresql.conf"
+   - "/var/lib/pgsql/12/data/postgresql.auto.conf"
+   - "/var/lib/pgsql/12/data/pg_hba.conf"
+
+- name: Flush handler
+  meta: flush_handlers
