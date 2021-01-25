@@ -41,3 +41,19 @@
         state: restarted
         name: postgresql-12
       become: true
+
+- name: PgBouncer Play
+  hosts: watcher
+  become: true
+
+  tasks:
+
+  - name: Setup PgBouncer Server
+    import_tasks: pgbouncer.yml
+
+  handlers:
+    - name: Restart database
+      systemd:
+        state: restarted
+        name: postgresql-12
+      become: true
