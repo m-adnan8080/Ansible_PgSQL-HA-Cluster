@@ -14,10 +14,11 @@ Below software must be installed on the machine to run this automation
 [OPTIONAL] You can also download the Ubuntu 20.04 vagrant box with command `vagrant box add ubuntu/focal64`. If this step skipped then `vagrant up` command will first download vagrant box then create VM(s) from it.
 
 ### Creating ssh key for postgres
+```
 ssh-keygen -t ed25519 -C postgres
 touch authorized_keys
 echo id_ed25519_postgres.pub > authorized_keys
-
+```
 
 ## Usage
 First clone the repo 
